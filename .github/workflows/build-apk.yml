@@ -1,4 +1,4 @@
-name: Construir APK Modo Hueso
+name: Construir APK Modo Hueso v2
 
 on:
   push:
@@ -8,24 +8,105 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
     steps:
       - name: 1. Bajar tus archivos
         uses: actions/checkout@v4
-        
-      - name: 2. Instalar Java (necesario para compilar Android)
+
+      - name: 2. Instalar Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
+
+      - name: 3. Instalar Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 4. Armar estructura Android automáticamente
+        run: |
+          echo "Creando estructura..."
+          mkdir -p app/src/main/java/com/david/psyche/bone
+          mkdir -p app/src/main/res/layout
+          mkdir -p app/src/main/res/values
           
-      - name: 3. Dar permiso al compilador
-        run: chmod +x ./gradlew
-        
-      - name: 4. Compilar APK Modo Hueso (con tu BoneCore + SingularityCrypto)
-        run: ./gradlew assembleDebug
-        
-      - name: 5. Subir APK para que la bajes
+          # Mover tus 3 .kt a su carpeta
+          cp MainActivity.kt app/src/main/java/com/david/psyche/bone/ 2>/dev/null || echo "MainActivity no encontrado en root"
+          cp ModoHueso-APK-Fuente.kt app/src/main/java/com/david/psyche/bone/ 2>/dev/null || echo "Fuente no encontrada"
+          cp SingularityCrypto.kt app/src/main/java/com/david/psyche/bone/ 2>/dev/null || echo "Singularity no encontrada"
+          
+          # Si build.gradle está en root, moverlo a app/
+          if [ -f build.gradle ]; then cp build.gradle app/build.gradle; fi
+          if [ -f build.gradle.txt ]; then cp build.gradle.txt app/build.gradle; fi
+          
+          # Crear settings.gradle
+          cat > settings.gradle << 'EOF'
+          pluginManagement { repositories { google(); mavenCentral(); gradleCentral() } }
+          dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
+          rootProject.name = "ModoHueso"
+          include ':app'
+          EOF
+          
+          # Crear build.gradle raíz
+          cat > build.gradle << 'EOF'
+          buildscript { repositories { google(); mavenCentral() } dependencies { classpath 'com.android.application:8.2.2' classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22' } }
+          allprojects { repositories { google(); mavenCentral() } }
+          EOF
+          
+          # Crear app/build.gradle si no existe
+          if [ ! -f app/build.gradle ]; then
+          cat > app/build.gradle << 'EOF'
+          plugins { id 'com.android.application'; id 'org.jetbrains.kotlin.android' }
+          android { namespace 'com.david.psyche.bone'; compileSdk 34; defaultConfig { applicationId "com.david.psyche.bone"; minSdk 24; targetSdk 34; versionCode 1; versionName "1.0" } buildTypes { release { minifyEnabled false } } compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 } kotlinOptions { jvmTarget = '1.8' } buildFeatures { viewBinding true } }
+          dependencies { implementation 'androidx.core:core-ktx:1.12.0'; implementation 'androidx.appcompat:appcompat:1.6.1'; implementation 'com.google.android.material:material:1.11.0' }
+          EOF
+          fi
+          
+          # Crear AndroidManifest.xml
+          cat > app/src/main/AndroidManifest.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET" />
+              <application android:allowBackup="true" android:label="Modo Hueso - David Lab" android:theme="@style/Theme.AppCompat.DayNight.DarkActionBar">
+                  <activity android:name=".MainActivity" android:exported="true">
+                      <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+          
+          # Crear layout mínimo
+          cat > app/src/main/res/layout/activity_main.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="vertical" android:padding="16dp" android:background="#0A0A12" android:layout_width="match_parent" android:layout_height="match_parent">
+          <TextView android:text="MODO HUESO - David Lab" android:textColor="#FFC107" android:textSize="18sp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+          <TextView android:id="@+id/tvHardness" android:textColor="#FFFFFF" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+          <TextView android:id="@+id/tvTarpit" android:textColor="#FFFFFF" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+          <TextView android:id="@+id/tvArgon" android:textColor="#FFFFFF" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+          <TextView android:id="@+id/tvYears" android:textColor="#4CAF50" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+          <EditText android:id="@+id/etPassword" android:hint="Clave" android:textColor="#FFFFFF" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+          <Button android:id="@+id/btnLogin" android:text="PROBAR ACCESO" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+          <TextView android:id="@+id/tvStatus" android:textColor="#FFFFFF" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+          <TextView android:id="@+id/tvLogs" android:textColor="#CCCCCC" android:layout_width="match_parent" android:layout_height="200dp"/>
+          <Button android:id="@+id/btnClearLogs" android:text="Limpiar" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+          <ProgressBar android:id="@+id/progressBone" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="20dp"/>
+          </LinearLayout>
+          EOF
+          
+          # Crear values
+          mkdir -p app/src/main/res/values
+          cat > app/src/main/res/values/themes.xml << 'EOF'
+          <resources><style name="Theme.AppCompat.DayNight.DarkActionBar" parent="Theme.AppCompat.Light.DarkActionBar"/></resources>
+          EOF
+          ls -R
+
+      - name: 5. Generar Gradle Wrapper
+        run: |
+          gradle wrapper --gradle-version 8.2
+          chmod +x ./gradlew
+
+      - name: 6. Compilar APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: 7. Subir APK
         uses: actions/upload-artifact@v4
         with:
           name: ModoHueso-APK-DavidLab
