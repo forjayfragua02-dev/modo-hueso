@@ -26,7 +26,7 @@ jobs:
           echo "/tmp/gradle-8.2/bin" >> $GITHUB_PATH
           gradle --version
 
-      - name: 4. Armar estructura Android SIMPLIFICADA
+      - name: 4. Armar estructura Android FORMATO MODERNO
         run: |
           mkdir -p app/src/main/java/com/david/psyche/bone
           mkdir -p app/src/main/res/layout
@@ -34,18 +34,71 @@ jobs:
           cp MainActivity.kt app/src/main/java/com/david/psyche/bone/ 2>/dev/null || echo "MainActivity faltante"
           cp ModoHueso-APK-Fuente.kt app/src/main/java/com/david/psyche/bone/ 2>/dev/null || echo "Fuente faltante"
           cp SingularityCrypto.kt app/src/main/java/com/david/psyche/bone/ 2>/dev/null || echo "Singularity faltante"
-          # settings.gradle MINIMO - solo 2 lineas, sin pluginManagement que fallaba
-          printf 'rootProject.name = "ModoHueso"\ninclude ":app"\n' > settings.gradle
-          cat settings.gradle
-          # build.gradle raiz simple
-          cat > build.gradle << 'EOF'
-          buildscript { repositories { google(); mavenCentral() } dependencies { classpath 'com.android.application:8.2.2' classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22' } }
-          allprojects { repositories { google(); mavenCentral() } }
+          # settings.gradle MODERNO con saltos de linea reales
+          cat > settings.gradle << 'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradleCentral()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "ModoHueso"
+          include ':app'
           EOF
+          cat settings.gradle
+          # build.gradle RAIZ MODERNO - sin buildscript, con plugins
+          cat > build.gradle << 'EOF'
+          plugins {
+              id 'com.android.application' version '8.2.2' apply false
+              id 'org.jetbrains.kotlin.android' version '1.9.22' apply false
+          }
+          EOF
+          cat build.gradle
+          # app/build.gradle MODERNO
           cat > app/build.gradle << 'EOF'
-          plugins { id 'com.android.application'; id 'org.jetbrains.kotlin.android' }
-          android { namespace 'com.david.psyche.bone'; compileSdk 34; defaultConfig { applicationId "com.david.psyche.bone"; minSdk 24; targetSdk 34; versionCode 1; versionName "1.0" } buildTypes { release { minifyEnabled false } } compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 } kotlinOptions { jvmTarget = '1.8' } buildFeatures { viewBinding true } }
-          dependencies { implementation 'androidx.core:core-ktx:1.12.0'; implementation 'androidx.appcompat:appcompat:1.6.1'; implementation 'com.google.android.material:material:1.11.0' }
+          plugins {
+              id 'com.android.application'
+              id 'org.jetbrains.kotlin.android'
+          }
+          android {
+              namespace 'com.david.psyche.bone'
+              compileSdk 34
+              defaultConfig {
+                  applicationId "com.david.psyche.bone"
+                  minSdk 24
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0"
+              }
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                  }
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_1_8
+                  targetCompatibility JavaVersion.VERSION_1_8
+              }
+              kotlinOptions {
+                  jvmTarget = '1.8'
+              }
+              buildFeatures {
+                  viewBinding true
+              }
+          }
+          dependencies {
+              implementation 'androidx.core:core-ktx:1.12.0'
+              implementation 'androidx.appcompat:appcompat:1.6.1'
+              implementation 'com.google.android.material:material:1.11.0'
+          }
           EOF
           cat > app/src/main/AndroidManifest.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
