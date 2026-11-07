@@ -18,20 +18,15 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: 3. Instalar Gradle 8.2 SIN cache de GitHub
+      - name: 3. Instalar Gradle 8.2 SIN cache
         run: |
-          echo "Bajando Gradle directo sin cache..."
           cd /tmp
           wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip
           unzip -q gradle-8.2-bin.zip
           echo "/tmp/gradle-8.2/bin" >> $GITHUB_PATH
           gradle --version
-          echo "ANDROID_HOME=$ANDROID_SDK_ROOT"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-          ls $ANDROID_SDK_ROOT || ls /opt/android-sdk || ls /usr/lib/android-sdk || echo "Buscando SDK..."
-          ls /opt/hostedtoolcache/ || true
 
-      - name: 4. Armar estructura Android
+      - name: 4. Armar estructura Android SIMPLIFICADA
         run: |
           mkdir -p app/src/main/java/com/david/psyche/bone
           mkdir -p app/src/main/res/layout
@@ -39,13 +34,10 @@ jobs:
           cp MainActivity.kt app/src/main/java/com/david/psyche/bone/ 2>/dev/null || echo "MainActivity faltante"
           cp ModoHueso-APK-Fuente.kt app/src/main/java/com/david/psyche/bone/ 2>/dev/null || echo "Fuente faltante"
           cp SingularityCrypto.kt app/src/main/java/com/david/psyche/bone/ 2>/dev/null || echo "Singularity faltante"
-          if [ -f build.gradle ]; then cp build.gradle app/build.gradle; fi
-          cat > settings.gradle << 'EOF'
-          pluginManagement { repositories { google(); mavenCentral(); gradleCentral() } }
-          dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
-          rootProject.name = "ModoHueso"
-          include ':app'
-          EOF
+          # settings.gradle MINIMO - solo 2 lineas, sin pluginManagement que fallaba
+          printf 'rootProject.name = "ModoHueso"\ninclude ":app"\n' > settings.gradle
+          cat settings.gradle
+          # build.gradle raiz simple
           cat > build.gradle << 'EOF'
           buildscript { repositories { google(); mavenCentral() } dependencies { classpath 'com.android.application:8.2.2' classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22' } }
           allprojects { repositories { google(); mavenCentral() } }
@@ -87,7 +79,7 @@ jobs:
           EOF
           ls -R
 
-      - name: 5. Compilar APK sin wrapper
+      - name: 5. Compilar APK
         run: |
           gradle assembleDebug --stacktrace --no-daemon
 
