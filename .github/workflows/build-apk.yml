@@ -18,7 +18,12 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: 3. Armar estructura Android
+      - name: 3. Instalar Gradle 8.2
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: 8.2
+
+      - name: 4. Armar estructura Android
         run: |
           mkdir -p app/src/main/java/com/david/psyche/bone
           mkdir -p app/src/main/res/layout
@@ -74,14 +79,11 @@ jobs:
           EOF
           ls -R
 
-      - name: 4. Generar Gradle Wrapper
+      - name: 5. Generar Gradle Wrapper y Compilar
         run: |
           gradle wrapper --gradle-version 8.2
           chmod +x ./gradlew
-          cat gradle/wrapper/gradle-wrapper.properties
-
-      - name: 5. Compilar APK
-        run: ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleDebug --stacktrace
 
       - name: 6. Subir APK
         uses: actions/upload-artifact@v4
